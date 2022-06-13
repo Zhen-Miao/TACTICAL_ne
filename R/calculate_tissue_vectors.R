@@ -16,9 +16,14 @@ calculate_tissue_vectors <- function(snp.annotated.df,tissue_annotation_file,gen
   '%>%' <- magrittr::'%>%'
   tiss.annot.df <- data.table::fread(tissue_annotation_file)
   gen.annot.df <- data.table::fread(genomic_annotation_file)
-  if (!is.null(ess.annot)){
-    ess.df <- data.table::fread(ess.file)
-  }
+  
+  ## ---------------- modified -------------------------
+  ## no ess annotation part 
+  # if (!is.null(ess.annot)){
+  #   ess.df <- data.table::fread(ess.file)
+  # }
+  ## ---------------- end of modified ------------------
+  
   out.df <- c()
   pb <- txtProgressBar(min=1,max=dim(snp.annotated.df)[1],style=3)
   for (r in 1:dim(snp.annotated.df)[1]){
@@ -51,48 +56,52 @@ calculate_tissue_vectors <- function(snp.annotated.df,tissue_annotation_file,gen
                       dplyr::filter(tiss.annot.df,V1==tiss,V2==annot)$V3,
                       dplyr::filter(gen.annot.df,V1==annot)$V2
         )
-        if (!is.null(ess.annot)){
-          if (aname==ess.annot){
-            eval.snp <- dplyr::select(row.df,one_of(aname)) %>% as.numeric(.)
-            if (eval.snp==1){
-              snp.chr <- full.row.df$CHR; snp.pos <- full.row.df$POS
-              sub.df <- dplyr::filter(ess.df,CHR==snp.chr,START<=snp.pos,END>=snp.pos)
-              if (dim(sub.df)[1]==1){
-                annot.matrix[i,e] <- (dplyr::select(sub.df,one_of(tiss)) %>% as.numeric(.)) * wgt
-              } else if (dim(sub.df)[1]==0){
-                if (print.warning==TRUE){
-                  write("\nWARNING: SNP " %&% full.row.df$SNPID %&% " at SIGNAL " %&% full.row.df$SIGNAL %&%
-                          " maps to annotation " %&% aname %&%
-                          " but SNP does not map to feature in provided specificity file, please inspect",stdout())
-                  print.warning<-FALSE
-                }
-                # when tissue specificity information is missing, defaults to equal value for each tissue
-                default.val <- 1 / length(tiss.vec)
-                annot.matrix[i,e] <- default.val * wgt
-              } else if (dim(sub.df)[1]>1){
-                if (print.warning==TRUE){
-                  write("\nWARNING: SNP " %&% full.row.df$SNPID %&% " at SIGNAL " %&% full.row.df$SIGNAL %&%
-                          " maps to annotation " %&% aname %&%
-                          " but SNP maps to multiple features in provided specificity file, please inspect",stdout())
-                  print.warning<-FALSE
-                }
-                # when tissue specificity information is ambiguous (i.e. snp maps to multiple features),
-                # defaults to equal value for each tissue
-                default.val <- 1 / length(tiss.vec)
-                annot.matrix[i,e] <- default.val * wgt
-              } else{
-                write("\nError linking annotated SNP to specificity file, please inspect",stderr())
-              }
-            } else{
-              annot.matrix[i,e] <- (dplyr::select(row.df,one_of(aname)) %>% as.numeric(.)) * wgt
-            }
-          } else{
-            annot.matrix[i,e] <- (dplyr::select(row.df,one_of(aname)) %>% as.numeric(.)) * wgt
-          }
-        } else{
+        
+        ## ---------------- modified -------------------------
+        
+        # if (!is.null(ess.annot)){
+        #   if (aname==ess.annot){
+        #     eval.snp <- dplyr::select(row.df,one_of(aname)) %>% as.numeric(.)
+        #     if (eval.snp==1){
+        #       snp.chr <- full.row.df$CHR; snp.pos <- full.row.df$POS
+        #       sub.df <- dplyr::filter(ess.df,CHR==snp.chr,START<=snp.pos,END>=snp.pos)
+        #       if (dim(sub.df)[1]==1){
+        #         annot.matrix[i,e] <- (dplyr::select(sub.df,one_of(tiss)) %>% as.numeric(.)) * wgt
+        #       } else if (dim(sub.df)[1]==0){
+        #         if (print.warning==TRUE){
+        #           write("\nWARNING: SNP " %&% full.row.df$SNPID %&% " at SIGNAL " %&% full.row.df$SIGNAL %&%
+        #                   " maps to annotation " %&% aname %&%
+        #                   " but SNP does not map to feature in provided specificity file, please inspect",stdout())
+        #           print.warning<-FALSE
+        #         }
+        #         # when tissue specificity information is missing, defaults to equal value for each tissue
+        #         default.val <- 1 / length(tiss.vec)
+        #         annot.matrix[i,e] <- default.val * wgt
+        #       } else if (dim(sub.df)[1]>1){
+        #         if (print.warning==TRUE){
+        #           write("\nWARNING: SNP " %&% full.row.df$SNPID %&% " at SIGNAL " %&% full.row.df$SIGNAL %&%
+        #                   " maps to annotation " %&% aname %&%
+        #                   " but SNP maps to multiple features in provided specificity file, please inspect",stdout())
+        #           print.warning<-FALSE
+        #         }
+        #         # when tissue specificity information is ambiguous (i.e. snp maps to multiple features),
+        #         # defaults to equal value for each tissue
+        #         default.val <- 1 / length(tiss.vec)
+        #         annot.matrix[i,e] <- default.val * wgt
+        #       } else{
+        #         write("\nError linking annotated SNP to specificity file, please inspect",stderr())
+        #       }
+        #     } else{
+        #       annot.matrix[i,e] <- (dplyr::select(row.df,one_of(aname)) %>% as.numeric(.)) * wgt
+        #     }
+        #   } else{
+        #     annot.matrix[i,e] <- (dplyr::select(row.df,one_of(aname)) %>% as.numeric(.)) * wgt
+        #   }
+        # }
+        
           annot.matrix[i,e] <- (dplyr::select(row.df,one_of(aname)) %>% as.numeric(.)) * wgt
-        }
-
+        
+        
       }
     }
     # Sum and scale annotation vectors
@@ -111,3 +120,4 @@ calculate_tissue_vectors <- function(snp.annotated.df,tissue_annotation_file,gen
   }
   return(out.df)
 }
+
