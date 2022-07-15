@@ -1,4 +1,15 @@
 ## analysis codes for snATAC-seq data
+## version 1
+---
+Input snATAC-seq data: binary 
+Input GARFIELD: no
+Input posterior probability: no
+Filter cell types: no
+With orthogonal annotations: no
+Peak filtering: no
+Forsed Sparsity: by rank of column sum
+---
+
 
 library('GenomicRanges')
 
