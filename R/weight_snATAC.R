@@ -28,9 +28,14 @@ pks_sub <- pks[as.data.frame(snp_ol)$subjectHits,]
 
 ## step 2. get scores -- where is posterior probability??
 
+# 2.0 column wise sparsity -- to be modified 
+csum <- colSums(mat_sub)
+top_rank_c <- csum >= median(csum)
+mat_sub <- mat_sub %*% diag(csum)
+
 # 2.1 row normalization
 mat_sub <- t(apply(mat_sub, 1, FUN = function(x) x/sum(x)))
-head(rowSums(mat_sub))
+# head(rowSums(mat_sub))
 
 # sum over all snps ## -- to be modified
 tiss_sums <- colSums(mat_sub)
