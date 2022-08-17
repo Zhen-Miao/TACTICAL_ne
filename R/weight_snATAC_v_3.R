@@ -1,5 +1,5 @@
 ## analysis codes for snATAC-seq data
-## version 1
+## version 3
 ## author: Zhen Miao
 
 #' ---
@@ -7,6 +7,7 @@
 #' Input GARFIELD: no
 #' Input posterior probability: yes
 #' Filter cell types: no
+#' Combine cell types with Cell ontology: yes
 #' With orthogonal annotations: no
 #' Peak filtering: no
 #' Forced Sparsity: by rank of column sum
@@ -96,11 +97,13 @@ quantile(colSums(mat_new))
 # 0%    25%    50%    75%   100% 
 # 33493  58988  92437 116465 262791
 
-#### ------------------ A better way is to filter by cell ontology
+#### replace mat by mat_new
+# mat <- mat_new
 
 
 #### ------------------ try normalize the matrix by total read count
 mat <- apply(mat, 2, FUN = function(x) x/sum(x) )
+# mat <- mat * 92437
 mat <- mat * 68388
 
 
@@ -117,14 +120,19 @@ pks_sub <- pks[as.data.frame(snp_ol)$subjectHits,]
 mat_ppi <- mat_sub * snp_sub$VALUE
 
 
-# 2.2 upweight by column sum
-##### -- define enrichment by relative score compared with the median
+# 2.2 upweight by column sum -- decided to take out this step
+# ##### -- define enrichment by relative score compared with the median
+# csum <- colSums(mat_ppi)
+# rel_enrich <- csum / median(csum)
+# quantile(rel_enrich) ## -- make sure the relative enrichment fall into reasonable range
+# # 0%        25%        50%        75%       100% 
+# # 0.07556083 0.77694464 1.00000000 1.30625885 2.11875622
+# mat_ppi <- t(t(mat_ppi) * rel_enrich)
+
+## column wise sparsity 
 csum <- colSums(mat_ppi)
 rel_enrich <- csum / median(csum)
-quantile(rel_enrich) ## -- make sure the relative enrichment fall into reasonable range
-# 0%        25%        50%        75%       100% 
-# 0.07556083 0.77694464 1.00000000 1.30625885 2.11875622
-mat_ppi <- t(t(mat_ppi) * rel_enrich)
+mat_ppi <- t(t(mat_ppi) * (rel_enrich >= 1))
 
 # 2.3 row normalization
 mat_ppi <- t(apply(mat_ppi, 1, FUN = function(x) x/ (sum(x)+0.01) ))
@@ -137,6 +145,50 @@ tiss_sums <- sort(tiss_sums, decreasing = T)
 
 ## display top hits
 tiss_sums[1:20]
+
+write.table(tiss_sums, 'tiss_sums.csv', sep = ',', quote = F)
+## results based on cell ontologies 
+glutamatergic neuron 
+149.04649 
+excitatory neuron 
+135.19428 
+inhibitory neuron 
+107.49493 
+fibroblast 
+105.14591 
+trophoblast giant cell 
+101.23525 
+thyroid follicular cell 
+98.84885 
+cortical cell of adrenal gland 
+97.03317 
+extravillous trophoblast 
+93.56136 
+hepatocyte 
+93.00328 
+macrophage 
+92.80339 
+gabaergic neuron 
+92.12900 
+type B pancreatic cell 
+89.32557 
+non keratinizing barrier epithelial cell 
+88.69019 
+astrocyte 
+87.37392 
+pancreatic A cell 
+83.44951 
+enterocyte 
+83.17940 
+ventricular cardiac muscle cell 
+82.29684 
+endothelial cell 
+81.28220 
+alveolar macrophage 
+77.94353 
+pericyte cell 
+77.34830 
+
 
 ## simply remove the last few low rank cell types
 # Esophageal Epithelial                     Follicular 
@@ -206,27 +258,27 @@ tiss_sums[1:20]
 # Fetal Metanephric                A Cardiomyocyte 
 # 93.87285                       93.53321 
 
-#### after adjust for seq depth 
-# Glutamatergic 1                     Follicular 
-# 81.21125                       78.26656 
-# Glutamatergic 2 Fetal Syncitio+Cytotrophoblast 
-# 69.51780                       69.26189 
-# Fetal Extravillous Trophoblast                         Beta 2 
-# 67.88439                       65.57321 
-# Fetal Enterocyte 1                     Hepatocyte 
-# 65.14149                       65.10245 
-# Fetal Adrenal Cortical          Esophageal Epithelial 
-# 61.44501                       61.16026 
-# Tuft                     Enterocyte 
-# 59.88739                       57.65650 
-# V Cardiomyocyte      Fetal Inhibitory Neuron 4 
-# 56.05960                       54.85920 
-# Fetal Hepatoblast                        Alpha 2 
-# 54.41039                       52.82449 
-# Fetal Photoreceptor          Fetal V Cardiomyocyte 
-# 52.80879                       51.67985 
-# Fetal Excitatory Neuron 3               Fetal Chromaffin 
-# 51.29994                       51.11765 
+### after adjust for seq depth
+Glutamatergic 1                     Follicular
+81.21125                       78.26656
+Glutamatergic 2 Fetal Syncitio+Cytotrophoblast
+69.51780                       69.26189
+Fetal Extravillous Trophoblast                         Beta 2
+67.88439                       65.57321
+Fetal Enterocyte 1                     Hepatocyte
+65.14149                       65.10245
+Fetal Adrenal Cortical          Esophageal Epithelial
+61.44501                       61.16026
+Tuft                     Enterocyte
+59.88739                       57.65650
+V Cardiomyocyte      Fetal Inhibitory Neuron 4
+56.05960                       54.85920
+Fetal Hepatoblast                        Alpha 2
+54.41039                       52.82449
+Fetal Photoreceptor          Fetal V Cardiomyocyte
+52.80879                       51.67985
+Fetal Excitatory Neuron 3               Fetal Chromaffin
+51.29994                       51.11765
 
 
 ss
